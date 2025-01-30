@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
-
+// 시작
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
   const [extractedText, setExtractedText] = useState("");

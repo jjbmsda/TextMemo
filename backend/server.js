@@ -1,26 +1,30 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
-const { Storage } = require("@google-cloud/storage");
 const vision = require("@google-cloud/vision");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000; // Render에서 포트 자동 감지
 
 app.use(cors());
 app.use(express.json());
 
-// ✅ Google Cloud Vision API 설정
-const client = new vision.ImageAnnotatorClient({
-  keyFilename: path.resolve(
-    "/Users/jangjungbu/Desktop/document/블로그 자료/neon-framing-449005-s9-37e33113cb2f.json"
-  ), // 올바른 경로 설정
-});
+// ✅ Google Cloud Vision API 설정 (환경 변수 사용)
+const client = new vision.ImageAnnotatorClient();
 
-// ✅ 이미지 업로드 설정
-const upload = multer({ dest: "uploads/" });
+// ✅ 업로드된 파일 저장 폴더 설정
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+// ✅ 이미지 업로드 설정 (multer)
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
+});
+const upload = multer({ storage });
 
 // 📌 1️⃣ 이미지 업로드 엔드포인트
 app.post("/api/upload", upload.single("image"), (req, res) => {
@@ -58,6 +62,12 @@ app.post("/api/extract-text", async (req, res) => {
   }
 });
 
+// ✅ 기본 라우트
+app.get("/", (req, res) => {
+  res.send("🚀 Render 서버에서 OCR API 실행 중!");
+});
+
+// ✅ 서버 실행
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

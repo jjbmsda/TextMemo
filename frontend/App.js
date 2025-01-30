@@ -11,7 +11,10 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
-// 시작
+
+// Render 배포된 백엔드 URL 설정
+const BACKEND_URL = "https://textmemo.onrender.com";
+
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
   const [extractedText, setExtractedText] = useState("");
@@ -31,7 +34,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      // 1️⃣ 이미지 업로드
+      // 1️⃣ 이미지 업로드 (Render 백엔드로 전송)
       const formData = new FormData();
       formData.append("image", {
         uri: imageUri,
@@ -40,16 +43,16 @@ export default function App() {
       });
 
       const uploadResponse = await axios.post(
-        "http://192.168.1.49:5000/api/upload",
+        `${BACKEND_URL}/api/upload`, // Render 백엔드로 이미지 업로드
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       const filePath = uploadResponse.data.filePath;
 
-      // 2️⃣ Google Vision API를 통해 OCR 요청
+      // 2️⃣ Google Vision API를 통해 OCR 요청 (Render 백엔드에서 처리)
       const response = await axios.post(
-        "http://192.168.1.49:5000/api/extract-text",
+        `${BACKEND_URL}/api/extract-text`, // Render 백엔드에서 OCR 실행
         { filePath },
         { headers: { "Content-Type": "application/json" } }
       );

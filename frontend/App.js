@@ -50,18 +50,20 @@ export default function App() {
       const formData = new FormData();
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서는 fetch()를 통해 blob 변환 필요
+        // 🔹 웹 환경: fetch()를 통해 blob 변환 후 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ 모바일 환경에서는 일반적인 파일 객체 사용
+        // 🔹 모바일 환경: 직접 FormData에 추가
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",
           name: "photo.jpg",
         });
       }
+
+      console.log("📤 Uploading Image...");
 
       // ✅ 1단계: 이미지 업로드 요청
       const uploadResponse = await axios.post(
@@ -71,11 +73,14 @@ export default function App() {
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
+
       const filePath = uploadResponse.data.filePath;
 
       if (!filePath) {
         throw new Error("파일 경로를 가져오는 데 실패했습니다.");
       }
+
+      console.log("📄 File Path:", filePath);
 
       // ✅ 2단계: OCR 요청
       const response = await axios.post(
@@ -91,7 +96,7 @@ export default function App() {
         setExtractedText(response.data.text);
       }
     } catch (error) {
-      console.error("OCR 요청 중 오류 발생:", error);
+      console.error("❌ OCR 요청 중 오류 발생:", error);
       Alert.alert("OCR 실패", "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);

@@ -39,21 +39,16 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) =>
     cb(null, Date.now() + path.extname(file.originalname)),
 });
-const upload = multer({ storage });
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
-app.post("/api/upload", upload.any(), (req, res) => {
+const upload = multer({ storage: multer.memoryStorage() }); // 메모리 저장 방식으로 변경
+app.post("/api/upload", upload.single("image"), (req, res) => {
   console.log("📂 Uploaded Files:", req.files);
   console.log("📂 Uploaded File:", req.file);
-
-  if (!req.files || req.files.length === 0) {
-    console.error("❌ No file uploaded.");
+  if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-
-  const filePath = path.resolve(req.files[0].path);
-  console.log("✅ File Uploaded Successfully:", filePath);
-  res.json({ filePath });
+  res.json({ filePath: req.file.path });
 });
 
 // 📌 2️⃣ **OCR 처리 API (Google Vision API)**

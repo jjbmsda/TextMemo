@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
@@ -25,7 +26,7 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
@@ -45,44 +46,38 @@ export default function App() {
     setLoading(true);
 
     try {
-      // ✅ 1단계: FormData 생성
+      // ✅ FormData 생성
       const formData = new FormData();
-      const file = {
-        uri: imageUri,
-        type: "image/jpeg",
-        name: "photo.jpg",
-      };
 
-      // ✅ Web 환경에서는 `blob`으로 변환
       if (Platform.OS === "web") {
+        // ✅ 웹 환경에서는 fetch()를 통해 blob 변환 필요
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        formData.append("image", file);
+        // ✅ 모바일 환경에서는 일반적인 파일 객체 사용
+        formData.append("image", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: "photo.jpg",
+        });
       }
 
-      try {
-        const uploadResponse = await axios.post(
-          `${BACKEND_URL}/api/upload`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        console.log("✅ Upload Success:", uploadResponse.data);
-      } catch (error) {
-        console.error("❌ Upload Failed:", error.response);
-      }
-
-      // ✅ 2단계: 백엔드로 이미지 업로드 요청
+      // ✅ 1단계: 이미지 업로드 요청
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
+      console.log("✅ Upload Success:", uploadResponse.data);
       const filePath = uploadResponse.data.filePath;
 
-      // ✅ 3단계: OCR 요청
+      if (!filePath) {
+        throw new Error("파일 경로를 가져오는 데 실패했습니다.");
+      }
+
+      // ✅ 2단계: OCR 요청
       const response = await axios.post(
         `${BACKEND_URL}/api/extract-text`,
         { filePath },

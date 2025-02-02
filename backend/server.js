@@ -47,6 +47,7 @@ app.post("/api/upload", upload.any(), (req, res) => {
   console.log("📂 Uploaded File:", req.file);
 
   if (!req.files || req.files.length === 0) {
+    console.error("❌ No file uploaded.");
     return res.status(400).json({ error: "No file uploaded" });
   }
 

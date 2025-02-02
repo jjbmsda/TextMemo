@@ -6,8 +6,9 @@ const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const PORT = process.env.PORT || 5000; // Render에서 포트 자동 감지
+const PORT = process.env.PORT || 5000;
 
+// ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
 app.use(express.json());
 
@@ -15,7 +16,10 @@ app.use(express.json());
 const client = new vision.ImageAnnotatorClient();
 
 // ✅ 프론트엔드 정적 파일 제공 (웹페이지 서비스)
-app.use(express.static("web-build"));
+const webBuildPath = path.join(__dirname, "web-build");
+if (fs.existsSync(webBuildPath)) {
+  app.use(express.static(webBuildPath));
+}
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
@@ -34,9 +38,7 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-
-  const filePath = path.resolve(req.file.path);
-  res.json({ filePath });
+  res.json({ filePath: req.file.path });
 });
 
 // 📌 2️⃣ OCR 처리 (Google Vision API 사용)
@@ -48,7 +50,6 @@ app.post("/api/extract-text", async (req, res) => {
   }
 
   try {
-    // Google Cloud Vision API를 이용하여 OCR 실행
     const [result] = await client.textDetection(filePath);
     const detections = result.textAnnotations;
 
@@ -65,9 +66,26 @@ app.post("/api/extract-text", async (req, res) => {
   }
 });
 
-// ✅ 프론트엔드 SPA 지원 (React Router 사용 가능)
+// ✅ SPA 지원 (React Router 처리)
 app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "web-build", "index.html"));
+  if (fs.existsSync(path.join(webBuildPath, "index.html"))) {
+    res.sendFile(path.join(webBuildPath, "index.html"));
+  } else {
+    res.status(404).send("404 Not Found: Web build not found.");
+  }
+});
+
+// ✅ 404 핸들링
+app.use((req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
+
+// ✅ 글로벌 에러 핸들링 미들웨어
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
+  res
+    .status(500)
+    .json({ error: "Internal Server Error", details: err.message });
 });
 
 // ✅ 서버 실행

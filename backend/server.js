@@ -42,14 +42,16 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
-app.post("/api/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    console.error("❌ No file uploaded");
+app.post("/api/upload", upload.any(), (req, res) => {
+  console.log("📂 Uploaded Files:", req.files);
+  console.log("📂 Uploaded File:", req.file);
+
+  if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const filePath = path.resolve(req.file.path);
-  console.log("✅ File uploaded:", filePath);
+  const filePath = path.resolve(req.files[0].path);
+  console.log("✅ File Uploaded Successfully:", filePath);
   res.json({ filePath });
 });
 

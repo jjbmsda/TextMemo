@@ -47,11 +47,31 @@ export default function App() {
     try {
       // ✅ 1단계: FormData 생성
       const formData = new FormData();
-      formData.append("image", {
+      const file = {
         uri: imageUri,
-        name: "photo.jpg",
         type: "image/jpeg",
-      });
+        name: "photo.jpg",
+      };
+
+      // ✅ Web 환경에서는 `blob`으로 변환
+      if (Platform.OS === "web") {
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        formData.append("image", blob, "photo.jpg");
+      } else {
+        formData.append("image", file);
+      }
+
+      try {
+        const uploadResponse = await axios.post(
+          `${BACKEND_URL}/api/upload`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        console.log("✅ Upload Success:", uploadResponse.data);
+      } catch (error) {
+        console.error("❌ Upload Failed:", error.response);
+      }
 
       // ✅ 2단계: 백엔드로 이미지 업로드 요청
       const uploadResponse = await axios.post(

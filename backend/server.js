@@ -17,6 +17,7 @@ console.log(
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ Google Cloud Vision API 설정
 const client = new vision.ImageAnnotatorClient({
@@ -29,22 +30,27 @@ if (fs.existsSync(webBuildPath)) {
   app.use(express.static(webBuildPath));
 }
 
-// ✅ multer 설정 (메모리 기반 저장)
+// ✅ multer 설정 (파일 저장 안하고 메모리에서 처리)
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// 📌 1️⃣ **이미지 업로드 API (multer)**
+// 📌 **1️⃣ 이미지 업로드 및 OCR 실행**
 app.post("/api/upload", upload.single("image"), async (req, res) => {
-  if (!req.file) {
-    console.error("❌ No file uploaded.");
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-
-  console.log("📂 Uploaded File:", req.file);
-
   try {
-    // ✅ Google Cloud Vision API를 통해 OCR 실행
+    if (!req.file) {
+      console.error("❌ No file uploaded.");
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    console.log("📂 Uploaded File Info:", {
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    });
+
+    // ✅ Google Cloud Vision API OCR 실행
     console.log("🔍 Processing OCR...");
+
     const [result] = await client.textDetection(req.file.buffer);
     const detections = result.textAnnotations;
 
@@ -54,7 +60,6 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
     }
 
     console.log("✅ OCR completed successfully!");
-
     res.json({ text: detections[0].description });
   } catch (error) {
     console.error("❌ OCR Processing Error:", error);

@@ -46,59 +46,39 @@ export default function App() {
     setLoading(true);
 
     try {
+      // ✅ FormData 생성
       const formData = new FormData();
+      const file = {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "photo.jpg",
+      };
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서는 blob 변환 후 FormData에 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ 모바일 환경에서는 직접 FormData에 추가
-        formData.append("image", {
-          uri: imageUri,
-          type: "image/jpeg",
-          name: "photo.jpg",
-        });
+        formData.append("image", file);
       }
 
-      console.log("📤 Uploading Image...");
-      console.log("📂 FormData:", formData);
+      // ✅ 헤더 설정 추가 (React Native 및 웹 호환)
+      const headers = {
+        "Content-Type": "multipart/form-data",
+      };
 
+      // ✅ 이미지 업로드 요청
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
-
-      const filePath = uploadResponse.data.filePath;
-
-      if (!filePath) {
-        throw new Error("파일 경로를 가져오는 데 실패했습니다.");
-      }
-
-      console.log("📄 File Path:", filePath);
-
-      // ✅ OCR 요청
-      const response = await axios.post(
-        `${BACKEND_URL}/api/extract-text`,
-        { filePath },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      if (!response.data.text) {
-        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
-        setExtractedText("No text detected.");
-      } else {
-        setExtractedText(response.data.text);
-      }
+      setExtractedText(uploadResponse.data.text);
     } catch (error) {
-      console.error("❌ OCR 요청 중 오류 발생:", error);
-      Alert.alert("OCR 실패", "OCR 처리 중 오류가 발생했습니다.");
+      console.error("❌ Upload Failed:", error.response);
+      Alert.alert("업로드 실패", "파일을 업로드하는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }

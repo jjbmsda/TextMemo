@@ -45,14 +45,15 @@ export default function App() {
     setLoading(true);
 
     try {
-      // ✅ 1단계: 이미지 업로드
+      // ✅ 1단계: FormData 생성
       const formData = new FormData();
       formData.append("image", {
         uri: imageUri,
-        type: "image/jpeg",
         name: "photo.jpg",
+        type: "image/jpeg",
       });
 
+      // ✅ 2단계: 백엔드로 이미지 업로드 요청
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
@@ -61,7 +62,7 @@ export default function App() {
 
       const filePath = uploadResponse.data.filePath;
 
-      // ✅ 2단계: OCR 요청
+      // ✅ 3단계: OCR 요청
       const response = await axios.post(
         `${BACKEND_URL}/api/extract-text`,
         { filePath },

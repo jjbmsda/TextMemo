@@ -14,6 +14,9 @@ app.use(express.json());
 // ✅ Google Cloud Vision API 설정 (환경 변수 사용)
 const client = new vision.ImageAnnotatorClient();
 
+// ✅ 프론트엔드 정적 파일 제공 (웹페이지 서비스)
+app.use(express.static("web-build"));
+
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
@@ -62,12 +65,12 @@ app.post("/api/extract-text", async (req, res) => {
   }
 });
 
-// ✅ 기본 라우트
-app.get("/", (req, res) => {
-  res.send("🚀 Render 서버에서 OCR API 실행 중!");
+// ✅ 프론트엔드 SPA 지원 (React Router 사용 가능)
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "web-build", "index.html"));
 });
 
 // ✅ 서버 실행
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

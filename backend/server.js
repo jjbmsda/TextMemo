@@ -8,12 +8,19 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+console.log(
+  "✅ GOOGLE_APPLICATION_CREDENTIALS:",
+  process.env.GOOGLE_APPLICATION_CREDENTIALS
+);
+
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
 app.use(express.json());
 
 // ✅ Google Cloud Vision API 설정 (환경 변수 사용)
-const client = new vision.ImageAnnotatorClient();
+const client = new vision.ImageAnnotatorClient({
+  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Render 환경 변수 사용
+});
 
 // ✅ 프론트엔드 정적 파일 제공 (웹페이지 서비스)
 const webBuildPath = path.join(__dirname, "web-build");

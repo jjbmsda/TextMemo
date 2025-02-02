@@ -8,33 +8,44 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 
-// Render 배포된 백엔드 URL 설정
-const BACKEND_URL = "https://textmemo.onrender.com";
+// ✅ Render 배포된 백엔드 URL 설정 (환경 변수 지원)
+const BACKEND_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
 
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
   const [extractedText, setExtractedText] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE],
       allowsEditing: true,
       quality: 1,
     });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      setExtractedText(""); // 새로운 이미지 선택 시 기존 OCR 결과 초기화
+    }
   };
 
+  // 📌 2️⃣ 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
-    if (!imageUri) return;
+    if (!imageUri) {
+      Alert.alert("Error", "이미지를 먼저 선택해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // 1️⃣ 이미지 업로드 (Render 백엔드로 전송)
+      // ✅ 1단계: 이미지 업로드
       const formData = new FormData();
       formData.append("image", {
         uri: imageUri,
@@ -43,24 +54,29 @@ export default function App() {
       });
 
       const uploadResponse = await axios.post(
-        `${BACKEND_URL}/api/upload`, // Render 백엔드로 이미지 업로드
+        `${BACKEND_URL}/api/upload`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       const filePath = uploadResponse.data.filePath;
 
-      // 2️⃣ Google Vision API를 통해 OCR 요청 (Render 백엔드에서 처리)
+      // ✅ 2단계: OCR 요청
       const response = await axios.post(
-        `${BACKEND_URL}/api/extract-text`, // Render 백엔드에서 OCR 실행
+        `${BACKEND_URL}/api/extract-text`,
         { filePath },
         { headers: { "Content-Type": "application/json" } }
       );
 
-      setExtractedText(response.data.text);
+      if (!response.data.text) {
+        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
+        setExtractedText("No text detected.");
+      } else {
+        setExtractedText(response.data.text);
+      }
     } catch (error) {
       console.error("OCR 요청 중 오류 발생:", error);
-      alert("OCR 처리 중 오류가 발생했습니다.");
+      Alert.alert("OCR 실패", "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -68,32 +84,38 @@ export default function App() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* 이미지 선택 버튼 */}
       <TouchableOpacity onPress={pickImage} style={styles.button}>
-        <Text style={styles.buttonText}>Select Image</Text>
+        <Text style={styles.buttonText}>이미지 선택</Text>
       </TouchableOpacity>
 
+      {/* 선택한 이미지 미리보기 */}
       {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
+      {/* OCR 실행 버튼 */}
       <TouchableOpacity onPress={uploadImage} style={styles.button}>
         <Text style={styles.buttonText}>
-          {loading ? "Processing..." : "Extract Text"}
+          {loading ? "처리 중..." : "텍스트 추출"}
         </Text>
       </TouchableOpacity>
 
+      {/* 로딩 인디케이터 */}
       {loading && <ActivityIndicator size="large" color="#fff" />}
 
+      {/* OCR 결과 출력 */}
       <TextInput
         style={styles.textInput}
         multiline
         value={extractedText}
-        onChangeText={(text) => setExtractedText(text)}
-        placeholder="Extracted text will appear here"
+        onChangeText={setExtractedText}
+        placeholder="추출된 텍스트가 여기에 표시됩니다."
         placeholderTextColor="#999"
       />
     </ScrollView>
   );
 }
 
+// ✅ 스타일 정의
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

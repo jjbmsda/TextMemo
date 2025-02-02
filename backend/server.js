@@ -2,23 +2,39 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const vision = require("@google-cloud/vision");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Google Cloud Vision API 클라이언트 설정
-const client = new vision.ImageAnnotatorClient({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-});
+// ✅ 환경 변수 확인
+console.log(
+  "✅ GOOGLE_APPLICATION_CREDENTIALS:",
+  process.env.GOOGLE_APPLICATION_CREDENTIALS
+);
 
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ 메모리 저장소를 사용하는 `multer` 설정
-const upload = multer({ storage: multer.memoryStorage() });
+// ✅ Google Cloud Vision API 설정
+const client = new vision.ImageAnnotatorClient({
+  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Render 환경변수 사용
+});
 
-// 📌 **이미지 업로드 및 OCR 실행 API**
+// ✅ 프론트엔드 정적 파일 제공 (웹페이지 서비스)
+const webBuildPath = path.join(__dirname, "web-build");
+if (fs.existsSync(webBuildPath)) {
+  app.use(express.static(webBuildPath));
+}
+
+// ✅ multer 설정 (파일 저장 안하고 메모리에서 처리)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// 📌 **1️⃣ 이미지 업로드 및 OCR 실행**
 app.post("/api/upload", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
@@ -51,6 +67,28 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
       .status(500)
       .json({ error: "Failed to process OCR", details: error.message });
   }
+});
+
+// ✅ SPA 지원 (React Router 처리)
+app.get("*", (req, res) => {
+  if (fs.existsSync(path.join(webBuildPath, "index.html"))) {
+    res.sendFile(path.join(webBuildPath, "index.html"));
+  } else {
+    res.status(404).send("❌ 404 Not Found: Web build not found.");
+  }
+});
+
+// ✅ 404 핸들링
+app.use((req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
+
+// ✅ 글로벌 에러 핸들링 미들웨어
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err);
+  res
+    .status(500)
+    .json({ error: "Internal Server Error", details: err.message });
 });
 
 // ✅ 서버 실행

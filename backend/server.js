@@ -8,7 +8,7 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ 환경변수 확인
+// ✅ 환경 변수 확인
 console.log(
   "✅ GOOGLE_APPLICATION_CREDENTIALS:",
   process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -29,46 +29,23 @@ if (fs.existsSync(webBuildPath)) {
   app.use(express.static(webBuildPath));
 }
 
-// ✅ 업로드된 파일 저장 폴더 설정
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-// ✅ 이미지 업로드 설정 (multer)
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
+// ✅ multer 설정 (메모리 기반 저장)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
-const upload = multer({ storage: multer.memoryStorage() }); // 메모리 저장 방식으로 변경
-app.post("/api/upload", upload.single("image"), (req, res) => {
-  console.log("📂 Uploaded Files:", req.files);
-  console.log("📂 Uploaded File:", req.file);
+app.post("/api/upload", upload.single("image"), async (req, res) => {
   if (!req.file) {
+    console.error("❌ No file uploaded.");
     return res.status(400).json({ error: "No file uploaded" });
   }
-  res.json({ filePath: req.file.path });
-});
 
-// 📌 2️⃣ **OCR 처리 API (Google Vision API)**
-app.post("/api/extract-text", async (req, res) => {
-  let { filePath } = req.body;
-
-  if (!filePath) {
-    console.error("❌ No file path provided");
-    return res.status(400).json({ error: "Valid file path is required" });
-  }
-
-  filePath = path.resolve(filePath); // 절대 경로 변환
-  if (!fs.existsSync(filePath)) {
-    console.error("❌ File not found:", filePath);
-    return res.status(400).json({ error: "File does not exist" });
-  }
+  console.log("📂 Uploaded File:", req.file);
 
   try {
-    console.log("🔎 Processing OCR for:", filePath);
-    const [result] = await client.textDetection(filePath);
+    // ✅ Google Cloud Vision API를 통해 OCR 실행
+    console.log("🔍 Processing OCR...");
+    const [result] = await client.textDetection(req.file.buffer);
     const detections = result.textAnnotations;
 
     if (!detections || detections.length === 0) {
@@ -76,9 +53,7 @@ app.post("/api/extract-text", async (req, res) => {
       return res.status(500).json({ error: "OCR failed. No text extracted." });
     }
 
-    // ✅ OCR 성공 후 업로드된 파일 삭제
-    fs.unlinkSync(filePath);
-    console.log("✅ OCR completed, file deleted:", filePath);
+    console.log("✅ OCR completed successfully!");
 
     res.json({ text: detections[0].description });
   } catch (error) {

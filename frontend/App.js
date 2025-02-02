@@ -46,16 +46,15 @@ export default function App() {
     setLoading(true);
 
     try {
-      // ✅ FormData 생성
       const formData = new FormData();
 
       if (Platform.OS === "web") {
-        // 🔹 웹 환경: fetch()를 통해 blob 변환 후 추가
+        // ✅ 웹 환경에서는 blob 변환 후 FormData에 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // 🔹 모바일 환경: 직접 FormData에 추가
+        // ✅ 모바일 환경에서는 직접 FormData에 추가
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",
@@ -64,12 +63,14 @@ export default function App() {
       }
 
       console.log("📤 Uploading Image...");
+      console.log("📂 FormData:", formData);
 
-      // ✅ 1단계: 이미지 업로드 요청
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
@@ -82,7 +83,7 @@ export default function App() {
 
       console.log("📄 File Path:", filePath);
 
-      // ✅ 2단계: OCR 요청
+      // ✅ OCR 요청
       const response = await axios.post(
         `${BACKEND_URL}/api/extract-text`,
         { filePath },

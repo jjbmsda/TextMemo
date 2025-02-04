@@ -14,8 +14,9 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 
-// ✅ Render 배포된 백엔드 URL
-const BACKEND_URL = "https://textmemo.onrender.com";
+// ✅ Render 배포된 백엔드 URL 설정 (환경 변수 지원)
+const BACKEND_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
 
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
@@ -25,18 +26,17 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGE, // ✅ 최신 API 적용
+      mediaTypes: [ImagePicker.MediaType.IMAGE],
       allowsEditing: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
-      setExtractedText(""); // OCR 결과 초기화
+      setExtractedText(""); // 새로운 이미지 선택 시 기존 OCR 결과 초기화
     }
   };
 
-  // 📌 2️⃣ 이미지 업로드 및 OCR 요청
+  // 📌 2️⃣ 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -49,12 +49,12 @@ export default function App() {
       const formData = new FormData();
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서는 Blob 사용
+        // ✅ 웹 환경에서 Blob 변환 필요
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ 모바일 (iOS, Android)에서는 FormData에 파일 추가
+        // ✅ 모바일 환경 (iOS/Android)
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",

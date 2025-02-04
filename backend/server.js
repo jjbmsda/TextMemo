@@ -19,20 +19,24 @@ const client = new vision.ImageAnnotatorClient({
 
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
-app.use(express.urlencoded({ extended: true })); // ✅ FormData 지원
-app.use(express.json()); // 🚨 FormData 요청을 처리하려면 json()보다 위에 있어야 함
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // ✅ multer 설정 (파일을 디스크에 저장)
-const storage = multer.memoryStorage(); // ✅ 파일을 메모리에 저장
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
+});
 const upload = multer({ storage });
 
 // 📌 1️⃣ 이미지 업로드 엔드포인트
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  console.log("📂 Uploaded File Data:", req.file);
+  console.log("📂 Uploaded File:", req.file);
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
@@ -42,7 +46,7 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
   res.json({ filePath: req.file.path });
 });
 
-// 📌 2️⃣ **OCR 처리 API**
+// 📌 2️⃣ OCR 처리 API
 app.post("/api/extract-text", async (req, res) => {
   let { filePath } = req.body;
 
@@ -67,7 +71,6 @@ app.post("/api/extract-text", async (req, res) => {
       return res.status(500).json({ error: "OCR failed. No text extracted." });
     }
 
-    // ✅ OCR 성공 후 업로드된 파일 삭제
     fs.unlinkSync(filePath);
     console.log("✅ OCR completed, file deleted:", filePath);
 
@@ -80,16 +83,11 @@ app.post("/api/extract-text", async (req, res) => {
   }
 });
 
-// ✅ React 프론트엔드 정적 파일 제공 (SPA 지원)
-const webBuildPath = path.join(__dirname, "web-build");
-if (fs.existsSync(webBuildPath)) {
-  app.use(express.static(webBuildPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(webBuildPath, "index.html"));
-  });
-} else {
-  console.error("❌ web-build 폴더가 존재하지 않습니다.");
-}
+// ✅ React 프론트엔드 정적 파일 제공
+app.use(express.static("web-build"));
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "web-build", "index.html"));
+});
 
 // ✅ 서버 실행
 app.listen(PORT, () => {

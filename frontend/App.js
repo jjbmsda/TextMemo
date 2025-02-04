@@ -26,7 +26,7 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE],
+      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 방식 사용
       allowsEditing: true,
       quality: 1,
     });
@@ -109,7 +109,6 @@ export default function App() {
       </TouchableOpacity>
 
       {loading && <ActivityIndicator size="large" color="#fff" />}
-
       <TextInput
         style={styles.textInput}
         multiline
@@ -121,47 +120,3 @@ export default function App() {
     </ScrollView>
   );
 }
-
-// ✅ 스타일 정의
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#000",
-  },
-  button: {
-    backgroundColor: "#28a745",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: "90%",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  image: {
-    width: 300,
-    height: 300,
-    marginBottom: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#fff",
-    color: "#fff",
-    padding: 10,
-    width: "90%",
-    minHeight: 150,
-    borderRadius: 8,
-    fontSize: 16,
-    textAlignVertical: "top",
-    backgroundColor: "#1c1c1e",
-  },
-});

@@ -46,60 +46,49 @@ export default function App() {
     setLoading(true);
 
     try {
-      // ✅ FormData 생성
       const formData = new FormData();
-      const fileName = `photo-${Date.now()}.jpg`;
 
       if (Platform.OS === "web") {
-        // ✅ Web 환경 (Blob 변환)
+        // ✅ 웹 환경에서는 Blob 사용
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        formData.append(
-          "image",
-          new File([blob], fileName, { type: "image/jpeg" })
-        );
+        formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ Mobile 환경 (React Native)
+        // ✅ 모바일 (iOS, Android)에서는 FormData에 파일 추가
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",
-          name: fileName,
+          name: "photo.jpg",
         });
       }
 
-      // 📌 디버깅: FormData 내용 출력
-      console.log("📤 FormData:", formData);
+      console.log("📂 Sending FormData:", formData);
 
-      // ✅ 백엔드에 이미지 업로드
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
       const filePath = uploadResponse.data.filePath;
 
-      // ✅ OCR 요청
-      const response = await axios.post(
+      // OCR 요청
+      const responseOCR = await axios.post(
         `${BACKEND_URL}/api/extract-text`,
         { filePath },
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (!response.data.text) {
+      if (!responseOCR.data.text) {
         Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
         setExtractedText("No text detected.");
       } else {
-        setExtractedText(response.data.text);
+        setExtractedText(responseOCR.data.text);
       }
     } catch (error) {
-      console.error("❌ OCR 요청 중 오류 발생:", error);
-      Alert.alert("OCR 실패", "OCR 처리 중 오류가 발생했습니다.");
+      console.error("❌ Upload Error:", error);
+      Alert.alert("OCR 실패", "파일 업로드 중 문제가 발생했습니다.");
     } finally {
       setLoading(false);
     }

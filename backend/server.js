@@ -23,30 +23,31 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ 업로드된 파일 저장 폴더 확인
+// ✅ CORS 설정 및 JSON 파싱 활성화
+app.use(cors());
+app.use(express.json());
+
+// ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// ✅ multer 설정 (파일을 `uploads/` 폴더에 저장)
+// ✅ multer 설정 (파일을 디스크에 저장)
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+  destination: uploadDir,
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
 });
 const upload = multer({ storage });
 
-// 📌 1️⃣ **이미지 업로드 API**
-app.post("/api/upload", upload.single("image"), async (req, res) => {
-  console.log("📂 Uploaded File Data:", req.file);
+// 📌 1️⃣ 이미지 업로드 엔드포인트
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  console.log("📂 Uploaded File:", req.file);
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  console.log("✅ File Uploaded Successfully:", req.file.path);
   res.json({ filePath: req.file.path });
 });
 

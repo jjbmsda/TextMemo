@@ -52,7 +52,7 @@ export default function App() {
       const fileName = `photo-${Date.now()}.jpg`;
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서 Blob 변환
+        // ✅ 웹 환경에서는 Blob 변환
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append(
@@ -69,12 +69,17 @@ export default function App() {
       }
 
       console.log("📤 Uploading Image...");
+      console.log("📝 FormData 내용:", formData);
 
       // ✅ 백엔드에 이미지 업로드
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);

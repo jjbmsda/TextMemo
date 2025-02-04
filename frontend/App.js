@@ -15,8 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 
 // ✅ Render 배포된 백엔드 URL
-const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
+const BACKEND_URL = "https://textmemo.onrender.com";
 
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
@@ -26,18 +25,18 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE], // ✅ 최신 API 적용
+      mediaTypes: ImagePicker.MediaType.IMAGE, // ✅ 최신 API 적용
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
-      setExtractedText(""); // 새로운 이미지 선택 시 기존 OCR 결과 초기화
+      setExtractedText(""); // OCR 결과 초기화
     }
   };
 
-  // 📌 2️⃣ 이미지 업로드 및 OCR 처리
+  // 📌 2️⃣ 이미지 업로드 및 OCR 요청
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -52,7 +51,7 @@ export default function App() {
       const fileName = `photo-${Date.now()}.jpg`;
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서는 Blob 변환
+        // ✅ Web 환경 (Blob 변환)
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append(
@@ -60,7 +59,7 @@ export default function App() {
           new File([blob], fileName, { type: "image/jpeg" })
         );
       } else {
-        // ✅ 모바일 환경에서는 URI 사용
+        // ✅ Mobile 환경 (React Native)
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",
@@ -68,8 +67,8 @@ export default function App() {
         });
       }
 
-      console.log("📤 Uploading Image...");
-      console.log("📝 FormData 내용:", formData);
+      // 📌 디버깅: FormData 내용 출력
+      console.log("📤 FormData:", formData);
 
       // ✅ 백엔드에 이미지 업로드
       const uploadResponse = await axios.post(
@@ -83,7 +82,6 @@ export default function App() {
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
-
       const filePath = uploadResponse.data.filePath;
 
       // ✅ OCR 요청

@@ -22,11 +22,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ 업로드된 파일 저장 폴더 확인
-// ✅ CORS 설정 및 JSON 파싱 활성화
-app.use(cors());
-app.use(express.json());
-
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
@@ -39,7 +34,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 📌 1️⃣ 이미지 업로드 엔드포인트
+// 📌 1️⃣ **이미지 업로드 엔드포인트**
 app.post("/api/upload", upload.single("image"), (req, res) => {
   console.log("📂 Uploaded File:", req.file);
 
@@ -48,7 +43,9 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  res.json({ filePath: req.file.path });
+  // ✅ 파일 경로 응답
+  const filePath = path.resolve(req.file.path);
+  res.json({ filePath });
 });
 
 // 📌 2️⃣ **OCR 처리 API**

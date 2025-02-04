@@ -19,33 +19,27 @@ const client = new vision.ImageAnnotatorClient({
 
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); // ✅ FormData 지원
+app.use(express.json()); // 🚨 FormData 요청을 처리하려면 json()보다 위에 있어야 함
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // ✅ multer 설정 (파일을 디스크에 저장)
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
+const storage = multer.memoryStorage(); // ✅ 파일을 메모리에 저장
 const upload = multer({ storage });
 
-// 📌 1️⃣ **이미지 업로드 엔드포인트**
+// 📌 1️⃣ 이미지 업로드 엔드포인트
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  console.log("📂 Uploaded File:", req.file);
+  console.log("📂 Uploaded File Data:", req.file);
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  // ✅ 파일 경로 응답
-  const filePath = path.resolve(req.file.path);
-  res.json({ filePath });
+  res.json({ filePath: req.file.path });
 });
 
 // 📌 2️⃣ **OCR 처리 API**

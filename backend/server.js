@@ -46,10 +46,8 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const filePath = path.resolve(req.file.path);
-  console.log("✅ File Uploaded Successfully:", filePath);
-
-  res.json({ filePath });
+  console.log("✅ File Uploaded Successfully:", req.file.path);
+  res.json({ filePath: req.file.path });
 });
 
 // 📌 2️⃣ **OCR 처리 API**

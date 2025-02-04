@@ -14,7 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 
-// ✅ Render 배포된 백엔드 URL 설정 (환경 변수 지원)
+// ✅ Render 배포된 백엔드 URL
 const BACKEND_URL =
   process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
 
@@ -26,10 +26,11 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE], // ✅ 최신 API 적용
       allowsEditing: true,
       quality: 1,
     });
+
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
       setExtractedText(""); // 새로운 이미지 선택 시 기존 OCR 결과 초기화
@@ -46,39 +47,41 @@ export default function App() {
     setLoading(true);
 
     try {
-      // ✅ 1단계: FormData 생성
+      // ✅ FormData 생성
       const formData = new FormData();
-      const file = {
-        uri: imageUri,
-        type: "image/jpeg",
-        name: "photo.jpg",
-      };
+      const fileName = `photo-${Date.now()}.jpg`;
 
-      // ✅ Web 환경에서는 `blob`으로 변환
       if (Platform.OS === "web") {
+        // ✅ 웹 환경에서 Blob 변환
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        formData.append("image", blob, "photo.jpg");
+        formData.append(
+          "image",
+          new File([blob], fileName, { type: "image/jpeg" })
+        );
       } else {
-        formData.append("image", file);
+        // ✅ 모바일 환경에서는 URI 사용
+        formData.append("image", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: fileName,
+        });
       }
 
-      console.log("📂 Sending FormData:", formData);
+      console.log("📤 Uploading Image...");
 
-      // ✅ 2단계: 백엔드로 이미지 업로드 요청
+      // ✅ 백엔드에 이미지 업로드
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
 
       const filePath = uploadResponse.data.filePath;
 
-      // ✅ 3단계: OCR 요청
+      // ✅ OCR 요청
       const response = await axios.post(
         `${BACKEND_URL}/api/extract-text`,
         { filePath },
@@ -92,7 +95,7 @@ export default function App() {
         setExtractedText(response.data.text);
       }
     } catch (error) {
-      console.error("OCR 요청 중 오류 발생:", error);
+      console.error("❌ OCR 요청 중 오류 발생:", error);
       Alert.alert("OCR 실패", "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -101,25 +104,20 @@ export default function App() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* 이미지 선택 버튼 */}
       <TouchableOpacity onPress={pickImage} style={styles.button}>
         <Text style={styles.buttonText}>이미지 선택</Text>
       </TouchableOpacity>
 
-      {/* 선택한 이미지 미리보기 */}
       {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
-      {/* OCR 실행 버튼 */}
       <TouchableOpacity onPress={uploadImage} style={styles.button}>
         <Text style={styles.buttonText}>
           {loading ? "처리 중..." : "텍스트 추출"}
         </Text>
       </TouchableOpacity>
 
-      {/* 로딩 인디케이터 */}
       {loading && <ActivityIndicator size="large" color="#fff" />}
 
-      {/* OCR 결과 출력 */}
       <TextInput
         style={styles.textInput}
         multiline

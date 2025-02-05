@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
+console.log("현재 OS:", Platform.OS);
 
 // ✅ Render 배포된 백엔드 URL 설정
 const BACKEND_URL =
@@ -46,8 +47,6 @@ export default function App() {
 
   // 📌 2️⃣ 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
-    console.alert("🔹 uploadImage 함수 실행됨!"); // ✅ 확인용 로그
-
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
       return;
@@ -57,13 +56,14 @@ export default function App() {
 
     try {
       const formData = new FormData();
-      console.alert("📂 FormData 생성 시작"); // ✅ 확인용 로그
 
       if (Platform.OS === "web") {
+        // ✅ 웹 환경에서는 Blob 변환 후 FormData에 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
+        // ✅ 모바일(iOS/Android) 환경에서는 URI 사용
         formData.append("image", {
           uri: imageUri,
           type: "image/jpeg",
@@ -71,9 +71,8 @@ export default function App() {
         });
       }
 
-      console.alert("📂 FormData 확인:", formData); // ✅ 이 로그가 안 찍히는지 확인
-      console.alert("🔹 백엔드 API 요청 시작...");
-      console.alert("📂 FormData 확인 (Before Send):", formData);
+      // ✅ FormData 확인 (백엔드로 보내기 직전)
+      Alert.alert("📂 FormData 확인 (Before Send):", JSON.stringify(formData));
 
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
@@ -82,8 +81,24 @@ export default function App() {
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
+      const filePath = uploadResponse.data.filePath;
+
+      // OCR 요청
+      const responseOCR = await axios.post(
+        `${BACKEND_URL}/api/extract-text`,
+        { filePath },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (!responseOCR.data.text) {
+        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
+        setExtractedText("No text detected.");
+      } else {
+        setExtractedText(responseOCR.data.text);
+      }
     } catch (error) {
       console.error("❌ Upload Error:", error);
+      Alert.alert("OCR 실패", "파일 업로드 중 문제가 발생했습니다.");
     } finally {
       setLoading(false);
     }

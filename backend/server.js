@@ -41,6 +41,7 @@ const upload = multer({ storage });
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
 app.post("/api/upload", upload.single("image"), (req, res) => {
+  console.log("🔹 파일 업로드 요청 도착!"); // ✅ 확인용 로그
   console.log("📂 Uploaded File Data:", req.file);
 
   if (!req.file) {

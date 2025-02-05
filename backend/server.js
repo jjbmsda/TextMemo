@@ -33,6 +33,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+console.log("📂 Uploaded Data:", upload);
 
 // 📌 **1️⃣ 이미지 업로드 API (multer)**
 app.post("/api/upload", upload.single("image"), (req, res) => {

@@ -26,13 +26,13 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 Expo 방식
+      mediaTypes: ImagePicker.MediaType.IMAGES,
       allowsEditing: true,
       quality: 1,
     });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
-      setExtractedText(""); // 기존 OCR 결과 초기화
+      setExtractedText("");
     }
   };
 
@@ -47,19 +47,18 @@ export default function App() {
 
     try {
       const formData = new FormData();
+      const file = {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "photo.jpg",
+      };
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서 Blob 변환 필요
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ 모바일 환경 (iOS/Android)
-        formData.append("image", {
-          uri: imageUri,
-          type: "image/jpeg",
-          name: "photo.jpg",
-        });
+        formData.append("image", file);
       }
 
       console.log("📂 Sending FormData:", formData);
@@ -67,18 +66,17 @@ export default function App() {
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
       const filePath = uploadResponse.data.filePath;
 
-      // OCR 요청
-      const responseOCR = await axios.post(
-        `${BACKEND_URL}/api/extract-text`,
-        { filePath },
-        { headers: { "Content-Type": "application/json" } }
-      );
+      const responseOCR = await axios.post(`${BACKEND_URL}/api/extract-text`, {
+        filePath,
+      });
 
       if (!responseOCR.data.text) {
         Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
@@ -93,30 +91,4 @@ export default function App() {
       setLoading(false);
     }
   };
-
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity onPress={pickImage} style={styles.button}>
-        <Text style={styles.buttonText}>이미지 선택</Text>
-      </TouchableOpacity>
-
-      {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
-
-      <TouchableOpacity onPress={uploadImage} style={styles.button}>
-        <Text style={styles.buttonText}>
-          {loading ? "처리 중..." : "텍스트 추출"}
-        </Text>
-      </TouchableOpacity>
-
-      {loading && <ActivityIndicator size="large" color="#fff" />}
-      <TextInput
-        style={styles.textInput}
-        multiline
-        value={extractedText}
-        onChangeText={setExtractedText}
-        placeholder="추출된 텍스트가 여기에 표시됩니다."
-        placeholderTextColor="#999"
-      />
-    </ScrollView>
-  );
 }

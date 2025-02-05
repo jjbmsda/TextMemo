@@ -9,22 +9,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ Google Vision API 설정
-console.log(
-  "✅ GOOGLE_APPLICATION_CREDENTIALS:",
-  process.env.GOOGLE_APPLICATION_CREDENTIALS
-);
 const client = new vision.ImageAnnotatorClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });
 
-// ✅ CORS 설정
+// ✅ CORS 및 JSON 파싱 설정
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ 업로드 폴더 설정
+// ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// ✅ Multer 설정 (디스크에 저장)
+// ✅ multer 설정 (파일 저장 경로 및 파일명 지정)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -33,29 +31,22 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 파일 크기 제한 (10MB)
-});
 
-//  Json 데이터 파싱
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const upload = multer({ storage });
 
 // 📌 **1️⃣ 이미지 업로드 API**
-app.post("/api/upload", upload.single("image"), async (req, res) => {
-  console.log("📂 Uploaded File Data:", req.file);
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  console.log("📂 Uploaded Files:", req.file);
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  // ✅ 업로드된 파일 경로 반환
   res.json({ filePath: req.file.path });
 });
 
-// 📌 **2️⃣ OCR 처리 API (Google Vision)**
+// 📌 **2️⃣ OCR 처리 API**
 app.post("/api/extract-text", async (req, res) => {
   let { filePath } = req.body;
 
@@ -80,7 +71,8 @@ app.post("/api/extract-text", async (req, res) => {
       return res.status(500).json({ error: "OCR failed. No text extracted." });
     }
 
-    fs.unlinkSync(filePath); // OCR 후 파일 삭제
+    // ✅ OCR 성공 후 파일 삭제
+    fs.unlinkSync(filePath);
     console.log("✅ OCR completed, file deleted:", filePath);
 
     res.json({ text: detections[0].description });
@@ -92,11 +84,16 @@ app.post("/api/extract-text", async (req, res) => {
   }
 });
 
-// ✅ React 정적 파일 제공 (웹 프론트엔드)
-app.use(express.static("web-build"));
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "web-build", "index.html"));
-});
+// ✅ React 프론트엔드 정적 파일 제공
+const webBuildPath = path.join(__dirname, "web-build");
+if (fs.existsSync(webBuildPath)) {
+  app.use(express.static(webBuildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(webBuildPath, "index.html"));
+  });
+} else {
+  console.error("❌ web-build 폴더가 존재하지 않습니다.");
+}
 
 // ✅ 서버 실행
 app.listen(PORT, () => {

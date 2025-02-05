@@ -47,18 +47,17 @@ export default function App() {
 
     try {
       const formData = new FormData();
-      const file = {
-        uri: imageUri,
-        type: "image/jpeg",
-        name: "photo.jpg",
-      };
 
       if (Platform.OS === "web") {
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        formData.append("image", file);
+        formData.append("image", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: "photo.jpg",
+        });
       }
 
       console.log("📂 Sending FormData:", formData);

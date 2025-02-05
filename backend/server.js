@@ -34,9 +34,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 📌 **1️⃣ 이미지 업로드 API**
+// 📌 **1️⃣ 이미지 업로드 API (multer)**
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  console.log("📂 Uploaded Files:", req.file);
+  console.log("📂 Uploaded File Data:", req.file); // 로그 출력
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
@@ -71,7 +71,7 @@ app.post("/api/extract-text", async (req, res) => {
       return res.status(500).json({ error: "OCR failed. No text extracted." });
     }
 
-    // ✅ OCR 성공 후 파일 삭제
+    // ✅ OCR 성공 후 업로드된 파일 삭제
     fs.unlinkSync(filePath);
     console.log("✅ OCR completed, file deleted:", filePath);
 

@@ -25,14 +25,22 @@ export default function App() {
 
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
+    console.log("📂 이미지 선택 버튼 클릭됨!");
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGES,
+      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 Expo 방식
       allowsEditing: true,
       quality: 1,
     });
+
+    console.log("📂 이미지 선택 완료! 결과:", result);
+
     if (!result.canceled) {
+      console.log("✅ 이미지 선택 성공! 이미지 URI:", result.assets[0].uri);
       setImageUri(result.assets[0].uri);
-      setExtractedText("");
+      setExtractedText(""); // 기존 OCR 결과 초기화
+    } else {
+      console.log("⚠️ 이미지 선택이 취소됨.");
     }
   };
 

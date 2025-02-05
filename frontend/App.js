@@ -25,7 +25,7 @@ export default function App() {
 
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
-    console.log("📂 이미지 선택 버튼 클릭됨!");
+    console.alert("📂 이미지 선택 버튼 클릭됨!");
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 Expo 방식
@@ -33,10 +33,10 @@ export default function App() {
       quality: 1,
     });
 
-    console.log("📂 이미지 선택 완료! 결과:", result);
+    console.alert("📂 이미지 선택 완료! 결과:", result);
 
     if (!result.canceled) {
-      console.log("✅ 이미지 선택 성공! 이미지 URI:", result.assets[0].uri);
+      console.alert("✅ 이미지 선택 성공! 이미지 URI:", result.assets[0].uri);
       setImageUri(result.assets[0].uri);
       setExtractedText(""); // 기존 OCR 결과 초기화
     } else {
@@ -46,7 +46,7 @@ export default function App() {
 
   // 📌 2️⃣ 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
-    console.log("🔹 uploadImage 함수 실행됨!"); // ✅ 확인용 로그
+    console.alert("🔹 uploadImage 함수 실행됨!"); // ✅ 확인용 로그
 
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -57,7 +57,7 @@ export default function App() {
 
     try {
       const formData = new FormData();
-      console.log("📂 FormData 생성 시작"); // ✅ 확인용 로그
+      console.alert("📂 FormData 생성 시작"); // ✅ 확인용 로그
 
       if (Platform.OS === "web") {
         const response = await fetch(imageUri);
@@ -71,8 +71,9 @@ export default function App() {
         });
       }
 
-      console.log("📂 FormData 확인:", formData); // ✅ 이 로그가 안 찍히는지 확인
-      console.log("🔹 백엔드 API 요청 시작...");
+      console.alert("📂 FormData 확인:", formData); // ✅ 이 로그가 안 찍히는지 확인
+      console.alert("🔹 백엔드 API 요청 시작...");
+      console.alert("📂 FormData 확인 (Before Send):", formData);
 
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,

@@ -14,7 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 
-// ✅ Render 배포된 백엔드 URL 설정 (환경 변수 지원)
+// ✅ Render 배포된 백엔드 URL 설정
 const BACKEND_URL =
   process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
 
@@ -26,13 +26,13 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 방식 사용
+      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 Expo 방식
       allowsEditing: true,
       quality: 1,
     });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
-      setExtractedText(""); // 새로운 이미지 선택 시 기존 OCR 결과 초기화
+      setExtractedText(""); // 기존 OCR 결과 초기화
     }
   };
 

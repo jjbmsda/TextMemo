@@ -35,10 +35,13 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage: multer.memoryStorage(), // ✅ 메모리에 저장하여 처리
+  limits: { fileSize: 10 * 1024 * 1024 }, // 최대 10MB
+});
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
-app.post("/api/upload", upload.single("image"), (req, res) => {
+app.post("/api/upload", upload.single("image"), async (req, res) => {
   console.log("🔹 파일 업로드 요청 도착!");
   console.log("📂 요청 헤더:", req.headers);
   console.log("📂 요청 바디:", req.body);
@@ -49,9 +52,7 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const filePath = path.resolve(req.file.path);
-  console.log("✅ 파일 업로드 완료:", filePath);
-  res.json({ filePath });
+  res.json({ filePath: req.file.buffer.toString("base64") }); // 메모리 저장 방식이므로 파일 경로 대신 base64 반환
 });
 
 // 📌 2️⃣ **OCR 처리 API**

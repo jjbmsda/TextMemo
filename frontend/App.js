@@ -80,7 +80,7 @@ export default function App() {
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         JSON.stringify(Object.fromEntries(formData)),
-        { headers: {} } // 자동 설정되도록 유지
+        { headers: { "Content-Type": "application/json" } } // 자동 설정되도록 유지
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);

@@ -61,7 +61,7 @@ export default function App() {
         // ✅ 웹 환경에서 Blob 변환 후 FormData에 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        formData.append("image", blob, "photo.jpg");
+        formData.append("image", JSON.stringify(blob), "photo.jpg");
       } else {
         // ✅ 모바일 환경 (iOS/Android)
         formData.append("image", {
@@ -79,8 +79,8 @@ export default function App() {
       // ✅ axios로 업로드 요청 (❌ 'Content-Type': 'multipart/form-data' 설정 X)
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
-        JSON.stringify(Object.fromEntries(formData)),
-        { headers: { "Content-Type": "application/json" } } // 자동 설정되도록 유지
+        formData,
+        { headers: {} } // 자동 설정되도록 유지
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);

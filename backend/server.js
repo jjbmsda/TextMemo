@@ -17,26 +17,16 @@ const client = new vision.ImageAnnotatorClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });
 
-// ✅ CORS 설정 및 JSON 파싱 활성화
+// ✅ CORS 설정
 app.use(cors());
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// ✅ multer 설정 (파일을 디스크에 저장)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    console.log("✅ 파일 저장 경로 설정:", uploadDir);
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    console.log("✅ 파일 이름 설정:", file.originalname);
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+// ✅ multer 설정 (파일을 메모리에 저장)
 const upload = multer({
-  storage: multer.memoryStorage(), // ✅ 메모리에 저장하여 처리
+  storage: multer.memoryStorage(), // ✅ 파일을 메모리에 저장
   limits: { fileSize: 10 * 1024 * 1024 }, // 최대 10MB
 });
 
@@ -52,27 +42,26 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  res.json({ filePath: req.file.buffer.toString("base64") }); // 메모리 저장 방식이므로 파일 경로 대신 base64 반환
+  res.json({ fileBuffer: req.file.buffer.toString("base64") }); // ✅ 메모리 저장 방식이므로 base64 반환
 });
+
+// ✅ JSON 및 URL-encoded 요청을 처리하는 미들웨어 (multer 뒤에 배치)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // 📌 2️⃣ **OCR 처리 API**
 app.post("/api/extract-text", async (req, res) => {
-  let { filePath } = req.body;
+  let { fileBuffer } = req.body;
 
-  if (!filePath) {
-    console.error("❌ No file path provided");
-    return res.status(400).json({ error: "Valid file path is required" });
-  }
-
-  filePath = path.resolve(filePath);
-  if (!fs.existsSync(filePath)) {
-    console.error("❌ File not found:", filePath);
-    return res.status(400).json({ error: "File does not exist" });
+  if (!fileBuffer) {
+    console.error("❌ No file buffer provided");
+    return res.status(400).json({ error: "Valid file buffer is required" });
   }
 
   try {
-    console.log("🔎 OCR 실행 중:", filePath);
-    const [result] = await client.textDetection(filePath);
+    console.log("🔎 OCR 실행 중...");
+    const imageBuffer = Buffer.from(fileBuffer, "base64"); // ✅ Base64 → Buffer 변환
+    const [result] = await client.textDetection(imageBuffer);
     const detections = result.textAnnotations;
 
     if (!detections || detections.length === 0) {
@@ -80,8 +69,7 @@ app.post("/api/extract-text", async (req, res) => {
       return res.status(500).json({ error: "OCR failed. No text extracted." });
     }
 
-    fs.unlinkSync(filePath); // ✅ OCR 완료 후 파일 삭제
-    console.log("✅ OCR 완료, 파일 삭제됨:", filePath);
+    console.log("✅ OCR 완료!");
 
     res.json({ text: detections[0].description });
   } catch (error) {
@@ -102,9 +90,6 @@ if (fs.existsSync(webBuildPath)) {
 } else {
   console.error("❌ web-build 폴더가 존재하지 않습니다.");
 }
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ✅ 서버 실행
 app.listen(PORT, () => {

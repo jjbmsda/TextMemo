@@ -76,16 +76,11 @@ export default function App() {
         console.log("📂 FormData Content:", pair[0], pair[1]);
       }
 
-      // ✅ axios로 업로드 요청
+      // ✅ axios로 업로드 요청 (❌ 'Content-Type': 'multipart/form-data' 설정 X)
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          transformRequest: (data, headers) => {
-            return data;
-          },
-        }
+        { headers: {} } // 자동 설정되도록 유지
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);

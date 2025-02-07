@@ -80,7 +80,12 @@ export default function App() {
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          transformRequest: (data, headers) => {
+            return data;
+          },
+        }
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);

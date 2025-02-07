@@ -48,7 +48,7 @@ export default function App() {
   // 📌 2️⃣ 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
     if (!imageUri) {
-      Alert.alert("Error", "이미지를 먼저 선택해주세요.");
+      alert("이미지를 먼저 선택해주세요.");
       return;
     }
 
@@ -56,23 +56,24 @@ export default function App() {
 
     try {
       const formData = new FormData();
+      const file = {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "photo.jpg",
+      };
 
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서는 Blob 변환 후 FormData에 추가
         const response = await fetch(imageUri);
         const blob = await response.blob();
         formData.append("image", blob, "photo.jpg");
       } else {
-        // ✅ 모바일(iOS/Android) 환경에서는 URI 사용
-        formData.append("image", {
-          uri: imageUri,
-          type: "image/jpeg",
-          name: "photo.jpg",
-        });
+        formData.append("image", file);
       }
 
-      // ✅ FormData 확인 (백엔드로 보내기 직전)
-      Alert.alert("📂 FormData 확인 (Before Send):", JSON.stringify(formData));
+      // ✅ FormData 내부 데이터 확인
+      for (let pair of formData.entries()) {
+        console.log(`📂 FormData Key: ${pair[0]}, Value:`, pair[1]);
+      }
 
       const uploadResponse = await axios.post(
         `${BACKEND_URL}/api/upload`,
@@ -81,24 +82,8 @@ export default function App() {
       );
 
       console.log("✅ Upload Success:", uploadResponse.data);
-      const filePath = uploadResponse.data.filePath;
-
-      // OCR 요청
-      const responseOCR = await axios.post(
-        `${BACKEND_URL}/api/extract-text`,
-        { filePath },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      if (!responseOCR.data.text) {
-        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
-        setExtractedText("No text detected.");
-      } else {
-        setExtractedText(responseOCR.data.text);
-      }
     } catch (error) {
-      console.error("❌ Upload Error:", error);
-      Alert.alert("OCR 실패", "파일 업로드 중 문제가 발생했습니다.");
+      console.error("❌ Upload Failed:", error);
     } finally {
       setLoading(false);
     }

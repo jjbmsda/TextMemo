@@ -19,8 +19,6 @@ const client = new vision.ImageAnnotatorClient({
 
 // ✅ CORS 설정 및 JSON 파싱 활성화
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");
@@ -41,8 +39,10 @@ const upload = multer({ storage });
 
 // 📌 1️⃣ **이미지 업로드 API (multer)**
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  console.log("🔹 파일 업로드 요청 도착!"); // ✅ 확인용 로그
-  console.log("📂 Uploaded File Data:", req.file);
+  console.log("🔹 파일 업로드 요청 도착!");
+  console.log("📂 요청 헤더:", req.headers);
+  console.log("📂 요청 바디:", req.body);
+  console.log("📂 업로드된 파일 정보:", req.file);
 
   if (!req.file) {
     console.error("❌ No file uploaded.");
@@ -101,6 +101,9 @@ if (fs.existsSync(webBuildPath)) {
 } else {
   console.error("❌ web-build 폴더가 존재하지 않습니다.");
 }
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ 서버 실행
 app.listen(PORT, () => {

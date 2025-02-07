@@ -73,7 +73,7 @@ export default function App() {
 
       // 📌 FormData 내용 확인
       for (let pair of formData.entries()) {
-        console.log("📂 FormData Content:", pair[0], pair[1]);
+        console.alert("📂 FormData Content:", pair[0], pair[1]);
       }
 
       // ✅ axios로 업로드 요청 (❌ 'Content-Type': 'multipart/form-data' 설정 X)

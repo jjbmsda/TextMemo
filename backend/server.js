@@ -24,12 +24,12 @@ app.use(express.json());
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+// ✅ 정적 파일 제공: 업로드된 파일을 접근 가능하도록 설정
+app.use("/uploads", express.static(uploadDir));
+
 // 📌 1️⃣ **이미지 업로드 API**
 app.post("/api/upload", async (req, res) => {
   console.log("🔹 파일 업로드 요청 도착!");
-  console.log("📂 요청 헤더:", req.headers);
-  console.log("📂 요청 바디:", req.body);
-  console.log("📂 업로드된 파일 정보:", req.file);
 
   try {
     const fileName = `upload_${Date.now()}.jpg`;
@@ -53,7 +53,7 @@ app.post("/api/upload", async (req, res) => {
   }
 });
 
-// 📌 2️⃣ **OCR 처리 API**
+// 📌 2️⃣ **OCR 처리 API (메모리에서 직접 파일 로드)**
 app.post("/api/extract-text", async (req, res) => {
   let { filePath } = req.body;
 
@@ -70,7 +70,10 @@ app.post("/api/extract-text", async (req, res) => {
 
   try {
     console.log("🔎 OCR 실행 중:", filePath);
-    const [result] = await client.textDetection(filePath);
+
+    // ✅ 파일을 메모리로 읽어서 Google Vision API로 전송
+    const imageBuffer = fs.readFileSync(filePath);
+    const [result] = await client.textDetection(imageBuffer);
     const detections = result.textAnnotations;
 
     if (!detections || detections.length === 0) {

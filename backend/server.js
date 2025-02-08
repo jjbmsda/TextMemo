@@ -53,6 +53,29 @@ app.post("/api/upload", async (req, res) => {
   }
 });
 
+app.post("/api/upload-base64", async (req, res) => {
+  console.log("🔹 Base64 파일 업로드 요청 도착!");
+
+  try {
+    const { image } = req.body;
+    if (!image) {
+      console.error("❌ No image data received.");
+      return res.status(400).json({ error: "No image data received" });
+    }
+
+    // ✅ Base64 데이터를 실제 이미지 파일로 변환
+    const fileName = `upload_${Date.now()}.jpg`;
+    const filePath = path.join(uploadDir, fileName);
+    fs.writeFileSync(filePath, Buffer.from(image, "base64"));
+
+    console.log("✅ 파일 저장 완료:", filePath);
+    res.json({ filePath });
+  } catch (error) {
+    console.error("❌ Base64 업로드 오류:", error);
+    res.status(500).json({ error: "Base64 Upload failed" });
+  }
+});
+
 // 📌 2️⃣ **OCR 처리 API (메모리에서 직접 파일 로드)**
 app.post("/api/extract-text", async (req, res) => {
   let { filePath } = req.body;

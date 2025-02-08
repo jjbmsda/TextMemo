@@ -42,47 +42,50 @@ export default function App() {
     setLoading(true);
 
     try {
-      let blob;
+      let base64Image;
+
       if (Platform.OS === "web") {
+        // ✅ 웹 환경에서는 Blob -> Base64 변환 후 전송
         const response = await fetch(imageUri);
-        blob = await response.blob(); // Blob 변환
-      } else {
-        blob = {
-          uri: imageUri,
-          type: "image/jpeg",
-          name: "photo.jpg",
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          base64Image = reader.result.split(",")[1]; // Base64 데이터만 추출
+
+          // ✅ Base64 이미지 데이터를 JSON으로 전송
+          const response = await fetch(`${BACKEND_URL}/api/upload-base64`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64Image }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log("✅ Upload Success:", result);
+
+          // ✅ OCR 요청
+          const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePath: result.filePath }),
+          });
+
+          const ocrResult = await responseOCR.json();
+          if (!ocrResult.text) {
+            Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
+            setExtractedText("No text detected.");
+          } else {
+            setExtractedText(ocrResult.text);
+          }
         };
-      }
-
-      console.log("📂 Blob Data 확인:", blob);
-
-      // Fetch API로 파일 전송 (FormData 없이 바이너리 데이터 전송)
-      const response = await fetch(`${BACKEND_URL}/api/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/octet-stream" }, // 파일 데이터
-        body: blob,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ Upload Success:", result);
-
-      // OCR 요청
-      const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath: result.filePath }),
-      });
-
-      const ocrResult = await responseOCR.json();
-      if (!ocrResult.text) {
-        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
-        setExtractedText("No text detected.");
       } else {
-        setExtractedText(ocrResult.text);
+        // ✅ 모바일 환경 (iOS/Android)
+        Alert.alert("현재 Base64 변환 방식은 웹에서만 지원됩니다.");
       }
     } catch (error) {
       console.error("❌ Upload Error:", error);

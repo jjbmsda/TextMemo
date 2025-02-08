@@ -13,29 +13,26 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
-// ✅ Render 배포된 백엔드 URL 설정
 const BACKEND_URL =
   process.env.EXPO_PUBLIC_BACKEND_URL || "https://textmemo.onrender.com";
 
-function App() {
+export default function App() {
   const [imageUri, setImageUri] = useState(null);
   const [extractedText, setExtractedText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGES, // ✅ 최신 Expo 방식
+      mediaTypes: ImagePicker.MediaType.IMAGES,
       allowsEditing: true,
       quality: 1,
     });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
-      setExtractedText(""); // 기존 OCR 결과 초기화
+      setExtractedText("");
     }
   };
 
-  // 📌 2️⃣ Fetch API를 이용한 이미지 업로드 및 OCR 처리
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -45,60 +42,50 @@ function App() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-
+      let blob;
       if (Platform.OS === "web") {
-        // ✅ 웹 환경에서 Blob 변환 필요
         const response = await fetch(imageUri);
-        const blob = await response.blob();
-        formData.append("image", blob, "photo.jpg");
+        blob = await response.blob(); // Blob 변환
       } else {
-        // ✅ 모바일 환경 (iOS/Android)
-        formData.append("image", {
+        blob = {
           uri: imageUri,
           type: "image/jpeg",
           name: "photo.jpg",
-        });
+        };
       }
 
-      console.log("📂 Sending FormData (Fetch API):", formData);
+      console.log("📂 Blob Data 확인:", blob);
 
-      // ✅ Fetch API를 사용한 이미지 업로드 요청
-      const uploadResponse = await fetch(`${BACKEND_URL}/api/upload`, {
+      // Fetch API로 파일 전송 (FormData 없이 바이너리 데이터 전송)
+      const response = await fetch(`${BACKEND_URL}/api/upload`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/octet-stream" }, // 파일 데이터
+        body: blob,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const uploadData = await uploadResponse.json();
-      console.log("✅ Upload Success:", uploadData);
+      const result = await response.json();
+      console.log("✅ Upload Success:", result);
 
-      const filePath = uploadData.filePath;
-
-      // ✅ Fetch API를 사용한 OCR 요청
-      const ocrResponse = await fetch(`${BACKEND_URL}/api/extract-text`, {
+      // OCR 요청
+      const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath }),
+        body: JSON.stringify({ filePath: result.filePath }),
       });
 
-      if (!ocrResponse.ok) {
-        throw new Error(`OCR failed: ${ocrResponse.status}`);
-      }
-
-      const ocrData = await ocrResponse.json();
-
-      if (!ocrData.text) {
+      const ocrResult = await responseOCR.json();
+      if (!ocrResult.text) {
         Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
         setExtractedText("No text detected.");
       } else {
-        setExtractedText(ocrData.text);
+        setExtractedText(ocrResult.text);
       }
     } catch (error) {
-      console.error("❌ Upload Error (Fetch API):", error);
+      console.error("❌ Upload Error:", error);
       Alert.alert("OCR 실패", "파일 업로드 중 문제가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -131,49 +118,3 @@ function App() {
     </ScrollView>
   );
 }
-
-// ✅ 스타일 정의
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#000",
-  },
-  button: {
-    backgroundColor: "#28a745",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: "90%",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  image: {
-    width: 300,
-    height: 300,
-    marginBottom: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#fff",
-    color: "#fff",
-    padding: 10,
-    width: "90%",
-    minHeight: 150,
-    borderRadius: 8,
-    fontSize: 16,
-    textAlignVertical: "top",
-    backgroundColor: "#1c1c1e",
-  },
-});
-
-export default App;

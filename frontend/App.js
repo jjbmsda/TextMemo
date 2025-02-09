@@ -34,7 +34,7 @@ export default function App() {
     }
   };
 
-  // 📌 2️⃣ **업로드 시 `upload-base64`만 호출하도록 강제 설정**
+  // 📌 2️⃣ `upload-base64`만 호출하도록 강제 설정
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");

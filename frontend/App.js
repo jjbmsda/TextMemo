@@ -34,7 +34,7 @@ export default function App() {
     }
   };
 
-  // 📌 2️⃣ **모든 환경에서 `upload-base64` 호출**
+  // 📌 2️⃣ **업로드 시 `upload-base64`만 호출하도록 강제 설정**
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -47,6 +47,8 @@ export default function App() {
       let base64Image;
 
       // ✅ 이미지 URI를 Base64로 변환
+      console.log("📂 이미지 URI 확인:", imageUri);
+
       const response = await fetch(imageUri);
       const blob = await response.blob();
       const reader = new FileReader();
@@ -55,10 +57,16 @@ export default function App() {
       reader.onloadend = async () => {
         base64Image = reader.result.split(",")[1]; // Base64 데이터만 추출
 
-        console.log("📂 Uploading to:", `${BACKEND_URL}/api/upload-base64`);
-        console.log("📂 Base64 Image Data:", base64Image.slice(0, 50) + "...");
+        console.log(
+          "📂 [업로드] `upload-base64` 호출 예정:",
+          `${BACKEND_URL}/api/upload-base64`
+        );
+        console.log(
+          "📂 Base64 이미지 데이터 (일부):",
+          base64Image.slice(0, 50) + "..."
+        );
 
-        // ✅ Base64 데이터 업로드
+        // ✅ Base64 데이터 업로드 (`upload`가 아니라 `upload-base64`로 강제 호출)
         const response = await fetch(`${BACKEND_URL}/api/upload-base64`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,7 +81,7 @@ export default function App() {
         console.log("✅ Upload Success:", result);
 
         // ✅ OCR 요청
-        console.log("📂 Requesting OCR for:", result.filePath);
+        console.log("📂 [OCR 요청] 파일 경로:", result.filePath);
         const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

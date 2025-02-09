@@ -54,6 +54,12 @@ export default function App() {
         reader.onloadend = async () => {
           base64Image = reader.result.split(",")[1]; // Base64 데이터만 추출
 
+          console.log("📂 Uploading to:", `${BACKEND_URL}/api/upload-base64`); // ✅ 호출 URL 확인
+          console.log(
+            "📂 Base64 Image Data:",
+            base64Image.slice(0, 50) + "..."
+          ); // ✅ Base64 데이터 일부 출력
+
           // ✅ Base64 이미지 데이터를 JSON으로 전송
           const response = await fetch(`${BACKEND_URL}/api/upload-base64`, {
             method: "POST",
@@ -69,6 +75,7 @@ export default function App() {
           console.log("✅ Upload Success:", result);
 
           // ✅ OCR 요청
+          console.log("📂 Requesting OCR for:", result.filePath);
           const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -84,8 +91,42 @@ export default function App() {
           }
         };
       } else {
-        // ✅ 모바일 환경 (iOS/Android)
-        Alert.alert("현재 Base64 변환 방식은 웹에서만 지원됩니다.");
+        // ✅ 모바일 환경에서는 `FormData`를 사용하여 `upload` 호출
+        console.log("📂 Mobile Uploading to:", `${BACKEND_URL}/api/upload`); // ✅ 모바일은 기존 API 사용
+
+        const formData = new FormData();
+        formData.append("image", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: "photo.jpg",
+        });
+
+        const response = await fetch(`${BACKEND_URL}/api/upload`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("✅ Upload Success (Mobile):", result);
+
+        // ✅ OCR 요청
+        const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filePath: result.filePath }),
+        });
+
+        const ocrResult = await responseOCR.json();
+        if (!ocrResult.text) {
+          Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
+          setExtractedText("No text detected.");
+        } else {
+          setExtractedText(ocrResult.text);
+        }
       }
     } catch (error) {
       console.error("❌ Upload Error:", error);

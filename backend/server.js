@@ -12,6 +12,8 @@ console.log(
   "✅ GOOGLE_APPLICATION_CREDENTIALS:",
   process.env.GOOGLE_APPLICATION_CREDENTIALS
 );
+console.log("📂 현재 백엔드 URL:", process.env.EXPO_PUBLIC_BACKEND_URL);
+
 const client = new vision.ImageAnnotatorClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });

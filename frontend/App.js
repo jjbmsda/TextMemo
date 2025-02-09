@@ -35,6 +35,9 @@ export default function App() {
   };
 
   // 📌 2️⃣ `upload-base64`만 호출하도록 강제 설정
+  const BACKEND_URL = "https://textmemo.onrender.com"; // 강제 설정
+  const UPLOAD_ENDPOINT = `${BACKEND_URL}/api/upload-base64`; // 강제적으로 upload-base64 사용
+
   const uploadImage = async () => {
     if (!imageUri) {
       Alert.alert("Error", "이미지를 먼저 선택해주세요.");
@@ -44,58 +47,45 @@ export default function App() {
     setLoading(true);
 
     try {
-      let base64Image;
-
-      // ✅ 이미지 URI를 Base64로 변환
-      console.log("📂 이미지 URI 확인:", imageUri);
-
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
-        base64Image = reader.result.split(",")[1]; // Base64 데이터만 추출
-
-        console.log(
-          "📂 [업로드] `upload-base64` 호출 예정:",
-          `${BACKEND_URL}/api/upload-base64`
-        );
-        console.log(
-          "📂 Base64 이미지 데이터 (일부):",
-          base64Image.slice(0, 50) + "..."
-        );
-
-        // ✅ Base64 데이터 업로드 (`upload`가 아니라 `upload-base64`로 강제 호출)
-        const response = await fetch(`${BACKEND_URL}/api/upload-base64`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64Image }),
+      let base64Data;
+      if (Platform.OS === "web") {
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(blob);
         });
+      } else {
+        base64Data = imageUri.split(",")[1]; // 모바일에서는 직접 처리
+      }
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+      console.log("📂 Base64 변환 완료:", base64Data.substring(0, 100) + "..."); // 첫 100자만 출력
 
-        const result = await response.json();
-        console.log("✅ Upload Success:", result);
+      // ✅ 강제적으로 upload-base64 API로 요청
+      const response = await fetch(UPLOAD_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64Data }),
+      });
 
-        // ✅ OCR 요청
-        console.log("📂 [OCR 요청] 파일 경로:", result.filePath);
-        const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filePath: result.filePath }),
-        });
+      const result = await response.json();
+      console.log("✅ Upload Success:", result);
 
-        const ocrResult = await responseOCR.json();
-        if (!ocrResult.text) {
-          Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
-          setExtractedText("No text detected.");
-        } else {
-          setExtractedText(ocrResult.text);
-        }
-      };
+      // OCR 요청
+      const responseOCR = await fetch(`${BACKEND_URL}/api/extract-text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filePath: result.filePath }),
+      });
+
+      const ocrResult = await responseOCR.json();
+      if (!ocrResult.text) {
+        Alert.alert("OCR 실패", "텍스트를 인식할 수 없습니다.");
+        setExtractedText("No text detected.");
+      } else {
+        setExtractedText(ocrResult.text);
+      }
     } catch (error) {
       console.error("❌ Upload Error:", error);
       Alert.alert("OCR 실패", "파일 업로드 중 문제가 발생했습니다.");

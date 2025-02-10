@@ -23,8 +23,7 @@ export default function App() {
   // 📌 1️⃣ 이미지 선택
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes:
-        ImagePicker.MediaType?.IMAGE || ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "image",
       allowsEditing: true,
       quality: 1,
     });

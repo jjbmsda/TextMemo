@@ -19,8 +19,9 @@ const client = new vision.ImageAnnotatorClient({
 });
 
 // ✅ CORS 설정 및 JSON 파싱 활성화
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cors());
-app.use(express.json());
 
 // ✅ 업로드된 파일 저장 폴더 설정
 const uploadDir = path.join(__dirname, "uploads");

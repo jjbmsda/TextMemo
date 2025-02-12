@@ -75,7 +75,7 @@ Content-Type: application/json
 "image": "base64EncodedString"
 }
 ```
-## 📌 Response Example
+### 📌 Response Example
 ```
 {
 "filePath": "/uploads/upload_1739081646799.jpg"
@@ -89,7 +89,7 @@ Content-Type: application/json
 "filePath": "/uploads/upload_1739081646799.jpg"
 }
 ```
-## 📌 Response Example
+### 📌 Response Example
 ```
 {
 "text": "Extracted text content"
@@ -146,5 +146,5 @@ Create a Pull Request
 This project is licensed under the MIT License.
 Feel free to use and improve it! 😊
 
-## 🚀 If you found this project useful, please give it a Star (⭐)!
+### 🚀 If you found this project useful, please give it a Star (⭐)!
 ### 📧 Contact: jjbmsda@gmail.com

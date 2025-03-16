@@ -144,7 +144,7 @@ Create a Pull Request
 ```
 ## License
 This project is licensed under the MIT License.
-Feel free to use and improve it! 
+Feel free to use and improve it.
 
 ### If you found this project useful, please give it a Star (⭐)!
 ### Contact: jjbmsda@gmail.com

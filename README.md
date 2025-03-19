@@ -1,7 +1,6 @@
 # TextMemoApp
 
-TextMemo is an OCR (Optical Character Recognition) based application that extracts text from images.   
-Users can either select an image from the gallery or capture a photo using the camera to extract text.   
+TextMemo is an OCR (Optical Character Recognition) based application that extracts text from images.    Users can either select an image from the gallery or capture a photo using the camera to extract text.   
 This application is built with React Native (Expo) + Express.js and utilizes Google Cloud Vision API for OCR processing.
 
 ## Tech Stack
